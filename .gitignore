@@ -1,2 +1,2 @@
 .env 
-commit-backup.sh
+./commit-backup.sh
