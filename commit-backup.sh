@@ -29,6 +29,14 @@ for cmd in git jq curl; do
     fi
 done
 
+# Проверяем и настраиваем remote URL для использования SSH
+current_remote=$(git remote get-url origin)
+if [[ $current_remote == https://* ]]; then
+    echo "Переключение на SSH URL..."
+    ssh_url="git@github.com:pefbrute/nexus-node.git"
+    git remote set-url origin "$ssh_url"
+fi
+
 # Добавляем изменения и получаем diff
 git add .
 check_command "Не удалось выполнить 'git add'"
