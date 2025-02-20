@@ -1,0 +1,419 @@
+Сделай скрипт, пожалуйста, который сам всё это вручную сделает
+
+Как установить git на ubuntu 22.04?EditЯ помогу вам установить Git на Ubuntu 22.04. Есть несколько простых способов:
+
+Через APT (рекомендуемый способ):
+
+bashCopysudo apt update
+sudo apt install git
+
+После установки желательно настроить базовую конфигурацию:
+
+bashCopygit config --global user.name "Ваше имя"
+git config --global user.email "ваша.почта@example.com"
+
+Чтобы проверить успешность установки, выполните:
+
+bashCopygit --version
+Вы должны увидеть версию установленного Git, например git version 2.34.1 или выше.
+Хотите ли вы также узнать о дополнительных настройках Git или у вас есть другие вопросы? CopyRetryFAsh: 100: cargo: not foundEditЭта ошибка говорит о том, что у вас не установлен Cargo - пакетный менеджер для языка программирования Rust. Чтобы установить Cargo, вам нужно установить Rust.
+Вот как это сделать на Ubuntu:
+bashCopysudo apt update
+sudo apt install rustc cargo
+Или можно установить через официальный установщик Rust:
+bashCopycurl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+После установки перезапустите терминал или выполните:
+bashCopysource $HOME/.cargo/env
+Чтобы проверить установку:
+bashCopycargo --version
+rustc --version
+Теперь вы должны иметь доступ к команде cargo и сможете использовать её для управления Rust-проектами. CopyRetryFAroot@nexus-node:~# curl https://cli.nexus.xyz/ | sh
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  4281  100  4281    0     0  40106      0 --:--:-- --:--:-- --:--:-- 40386
+rustc 1.75.0 (82e1608df 2023-12-21) (built from a source tarball)
+The Nexus network is currently in Testnet II. You can now earn Nexus Points.
+Do you agree to the Nexus Beta Terms of Use (https://nexus.xyz/terms-of-use)? (Y/n) y
+/root/.nexus/network-api exists. Updating.
+No local changes to save
+HEAD is now at b0af9e3 fix: install script (#1285)
+error: failed to parse lock file at: /root/.nexus/network-api/clients/cli/Cargo.lock
+Caused by:
+  lock file version 4 requires -Znext-lockfile-bump
+root@nexus-node:~#EditЭта ошибка связана с версией Cargo.lock файла. Давайте попробуем исправить это:
+
+Сначала обновим Rust до последней версии:
+
+bashCopyrustup update
+
+Если rustup не установлен, установим его:
+
+bashCopycurl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+
+Затем попробуйте очистить кэш и временные файлы:
+
+bashCopyrm -rf /root/.nexus/network-api
+
+После этого повторите установку:
+
+bashCopycurl https://cli.nexus.xyz/ | sh
+Если проблема сохраняется, можно попробовать установить конкретную версию Rust:
+bashCopyrustup default stable
+rustup update
+Дайте знать, помогло ли это решить проблему, и я смогу предложить альтернативные решения. CopyRetryFAroot@nexus-node:~# curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+source $HOME/.cargo/env
+info: downloading installer
+warning: it looks like you have an existing installation of Rust at:
+warning: /usr/bin
+warning: It is recommended that rustup be the primary Rust installation.
+warning: Otherwise you may have confusion unless you are careful with your PATH
+warning: If you are sure that you want both rustup and your already installed Rust
+warning: then please reply y' or yes' or set RUSTUP_INIT_SKIP_PATH_CHECK to yes
+warning: or pass `-y' to ignore all ignorable checks.
+error: cannot install while Rust is installed
+Continue? (y/N)EditПохоже, у вас уже установлена системная версия Rust через apt. Давайте сначала удалим её, а затем установим через rustup:
+
+Удалим системную версию Rust:
+
+bashCopysudo apt remove rustc cargo
+sudo apt autoremove
+
+Теперь попробуйте снова установить Rust через rustup:
+
+bashCopycurl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+После установки загрузите переменные окружения:
+
+bashCopysource $HOME/.cargo/env
+
+Проверьте установку:
+
+bashCopyrustc --version
+cargo --version
+
+После этого можно повторить установку Nexus CLI:
+
+bashCopycurl https://cli.nexus.xyz/ | sh
+Если у вас возникнут какие-либо ошибки на любом из этих шагов, дайте мне знать, и я помогу их решить. CopyRetryroot@nexus-node:~# rustc --version
+cargo --version
+rustc 1.84.1 (e71f9a9a9 2025-01-27)
+cargo 1.84.1 (66221abde 2024-11-19)
+root@nexus-node:~# curl https://cli.nexus.xyz/ | sh
+  % Total    % Received %pastedFAEditСудя по логам, ошибка возникает из-за отсутствия компилятора C (cc). Давайте установим необходимые инструменты для сборки:
+bashCopysudo apt update
+sudo apt install build-essential
+Пакет build-essential включает в себя gcc, g++ и make, которые необходимы для компиляции.
+После установки попробуйте снова запустить установку Nexus CLI:
+bashCopycurl https://cli.nexus.xyz/ | sh
+Эта ошибка часто возникает при работе с Rust-проектами, потому что многие зависимости требуют компиляции нативного кода. Установка build-essential должна решить проблему. CopyRetryroot@nexus-node:~# curl https://cli.nexus.xyz/ | sh
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    LepastedFAEditДля решения этой ошибки нужно установить pkg-config и библиотеки разработки OpenSSL. Выполните следующие команды:
+bashCopysudo apt update
+sudo apt install pkg-config libssl-dev
+После установки этих пакетов попробуйте снова запустить установку Nexus CLI:
+bashCopycurl https://cli.nexus.xyz/ | sh
+Эта ошибка возникает потому, что Rust-проект пытается собрать компоненты, которые зависят от OpenSSL, но не может найти необходимые заголовочные файлы и утилиту pkg-config для определения местоположения библиотек. CopyRetryFACompiling dirs v5.0.1
+error: failed to run custom build command for nexus-network v0.5.1 (/root/.nexus/network-api/clients/cli)
+Caused by:
+  process didn't exit successfully: /root/.nexus/network-api/clients/cli/target/release/build/nexus-network-ea227247c6d5a5fd/build-script-build (exit status: 1)
+  --- stdout
+  cargo:rerun-if-changed=proto/orchestrator.proto
+  cargo:rerun-if-changed=build.rs
+  Current dir: "/root/.nexus/network-api/clients/cli"
+  Looking for proto file at: "/root/.nexus/network-api/clients/cli/proto/orchestrator.proto"
+  Error: protoc is not installed or not in PATH.
+  --- stderr
+  Error: "protoc not found"
+warning: build failed, waiting for other jobs to finish...
+root@nexus-node:~#EditНужно установить компилятор Protocol Buffers (protoc). Выполните следующую команду:
+bashCopysudo apt install protobuf-compiler
+После установки protoc попробуйте снова запустить установку Nexus CLI:
+bashCopycurl https://cli.nexus.xyz/ | sh
+Эта ошибка возникает потому, что проект использует Protocol Buffers для сериализации данных, и ему требуется компилятор protoc для генерации кода из .proto файлов. После установки protobuf-compiler сборка должна пройти успешно.
+
+root@nexus-node:~# curl https://cli.nexus.xyz/ | sh
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+100  4281  100  4281    0     0   3654      0  0:00:01  0:00:01 --:--:--  3655
+rustc 1.84.1 (e71f9a9a9 2025-01-27)
+
+The Nexus network is currently in Testnet II. You can now earn Nexus Points.
+
+Do you agree to the Nexus Beta Terms of Use (https://nexus.xyz/terms-of-use)? (Y/n) y
+
+
+/root/.nexus/network-api exists. Updating.
+No local changes to save
+HEAD is now at b0af9e3 fix: install script (#1285)
+   Compiling nexus-vm-prover v0.2.3 (https://github.com/nexus-xyz/nexus-zkvm?branch=neo#ae4e2725)
+   Compiling nexus-network v0.5.1 (/root/.nexus/network-api/clients/cli)
+   Compiling tokio-tungstenite v0.23.1
+   Compiling prost v0.13.1
+error: failed to run custom build command for `nexus-network v0.5.1 (/root/.nexus/network-api/clients/cli)`
+
+Caused by:
+  process didn't exit successfully: `/root/.nexus/network-api/clients/cli/target/release/build/nexus-network-ea227247c6d5a5fd/build-script-build` (exit status: 1)
+  --- stdout
+  cargo:rerun-if-changed=proto/orchestrator.proto
+  cargo:rerun-if-changed=build.rs
+  Current dir: "/root/.nexus/network-api/clients/cli"
+  Looking for proto file at: "/root/.nexus/network-api/clients/cli/proto/orchestrator.proto"
+  protoc is installed and accessible.
+  Output directory src/proto exists.
+  Error compiling protobuf files: protoc failed: orchestrator.proto: This file contains proto3 optional fields, but --experimental_allow_proto3_optional was not set.
+
+  Error: protoc failed: orchestrator.proto: This file contains proto3 optional fields, but --experimental_allow_proto3_optional was not set.
+
+
+  --- stderr
+  Error: Custom { kind: Other, error: "protoc failed: orchestrator.proto: This file contains proto3 optional fields, but --experimental_allow_proto3_optional was not set.\n" }
+warning: build failed, waiting for other jobs to finish..
+
+
+
+
+Эта ошибка связана с версией protoc, которая не поддерживает опциональные поля в proto3 по умолчанию. Давайте обновим protobuf-compiler до более новой версии:
+
+1. Сначала удалим текущую версию:
+```bash
+sudo apt remove protobuf-compiler
+```
+
+2. Установим более новую версию из официального репозитория:
+```bash
+# Добавляем репозиторий
+sudo apt install -y software-properties-common
+sudo add-apt-repository ppa:maarten-fonville/protobuf
+
+# Обновляем пакеты и устанавливаем новую версию
+sudo apt update
+sudo apt install -y protobuf-compiler
+```
+
+3. Проверим версию:
+```bash
+protoc --version
+```
+
+4. Очистим предыдущую попытку установки:
+```bash
+rm -rf /root/.nexus/network-api
+```
+
+5. Теперь попробуйте снова установить Nexus CLI:
+```bash
+curl https://cli.nexus.xyz/ | sh
+```
+
+Новая версия protoc должна поддерживать опциональные поля в proto3 по умолчанию. Если проблема все еще сохраняется, дайте знать, и мы попробуем альтернативное решение.
+
+
+
+Use 'sudo apt autoremove' to remove them.
+The following packages will be REMOVED:
+  protobuf-compiler
+0 upgraded, 0 newly installed, 1 to remove and 79 not upgraded.
+After this operation, 113 kB disk space will be freed.
+Do you want to continue? [Y/n] y
+(Reading database ... 37179 files and directories currently installed.)
+Removing protobuf-compiler (3.12.4-1ubuntu7.22.04.1) ...
+root@nexus-node:~# # Добавляем репозиторий
+sudo apt install -y software-properties-common
+sudo add-apt-repository ppa:maarten-fonville/protobuf
+
+# Обновляем пакеты и устанавливаем новую версию
+sudo apt update
+sudo apt install -y protobuf-compiler
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+software-properties-common is already the newest version (0.99.22.9).
+The following packages were automatically installed and are no longer required:
+  libprotobuf23 libprotoc23
+Use 'sudo apt autoremove' to remove them.
+0 upgraded, 0 newly installed, 0 to remove and 79 not upgraded.
+Repository: 'deb https://ppa.launchpadcontent.net/maarten-fonville/protobuf/ubuntu/ jammy main'
+More info: https://launchpad.net/~maarten-fonville/+archive/ubuntu/protobuf
+Adding repository.
+Press [ENTER] to continue or Ctrl-c to cancel.
+Adding deb entry to /etc/apt/sources.list.d/maarten-fonville-ubuntu-protobuf-jammy.list
+Adding disabled deb-src entry to /etc/apt/sources.list.d/maarten-fonville-ubuntu-protobuf-jammy.list
+Adding key to /etc/apt/trusted.gpg.d/maarten-fonville-ubuntu-protobuf.gpg with fingerprint B0B65046D9826D045FAFBA324EE97B1881326419
+gpg: error running '/usr/bin/gpg-agent': probably not installed
+gpg: failed to start agent '/usr/bin/gpg-agent': Configuration error
+gpg: can't connect to the agent: Configuration error
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/softwareproperties/shortcuthandler.py", line 423, in add_key
+    subprocess.run(cmd.split(), check=True, input=keys)
+  File "/usr/lib/python3.10/subprocess.py", line 526, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '['gpg', '-q', '--no-options', '--no-default-keyring', '--batch', '--keyring', '/etc/apt/trusted.gpg.d/maarten-fonville-ubuntu-protobuf.gpg', '--homedir', '/tmp/tmp9t_7qd_s', '--import']' returned non-zero exit status 2.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/bin/add-apt-repository", line 364, in <module>
+    sys.exit(0 if addaptrepo.main() else 1)
+  File "/usr/bin/add-apt-repository", line 357, in main
+    shortcut.add()
+  File "/usr/lib/python3/dist-packages/softwareproperties/shortcuthandler.py", line 222, in add
+    self.add_key()
+  File "/usr/lib/python3/dist-packages/softwareproperties/shortcuthandler.py", line 425, in add_key
+    raise ShortcutException(e)
+softwareproperties.shortcuthandler.ShortcutException: Command '['gpg', '-q', '--no-options', '--no-default-keyring', '--batch', '--keyring', '/etc/apt/trusted.gpg.d/maarten-fonville-ubuntu-protobuf.gpg', '--homedir', '/tmp/tmp9t_7qd_s', '--import']' returned non-zero exit status 2.
+Get:1 http://nova.clouds.archive.ubuntu.com/ubuntu jammy InRelease [270 kB]
+Hit:2 http://security.ubuntu.com/ubuntu jammy-security InRelease                                                
+Get:3 http://nova.clouds.archive.ubuntu.com/ubuntu jammy-updates InRelease [128 kB]                             
+Get:4 http://nova.clouds.archive.ubuntu.com/ubuntu jammy-backports InRelease [127 kB]
+Ign:5 https://ppa.launchpadcontent.net/maarten-fonville/protobuf/ubuntu jammy InRelease
+Err:6 https://ppa.launchpadcontent.net/maarten-fonville/protobuf/ubuntu jammy Release
+  404  Not Found [IP: 185.125.190.80 443]
+Reading package lists... Done
+E: The repository 'https://ppa.launchpadcontent.net/maarten-fonville/protobuf/ubuntu jammy Release' does not have a Release file.
+N: Updating from such a repository can't be done securely, and is therefore disabled by default.
+N: See apt-secure(8) manpage for repository creation and user configuration details.
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+Suggested packages:
+  protobuf-mode-el
+Recommended packages:
+  libprotobuf-dev
+The following NEW packages will be installed:
+  protobuf-compiler
+0 upgraded, 1 newly installed, 0 to remove and 79 not upgraded.
+Need to get 29.2 kB of archives.
+After this operation, 113 kB of additional disk space will be used.
+Get:1 http://nova.clouds.archive.ubuntu.com/ubuntu jammy-updates/universe amd64 protobuf-compiler amd64 3.12.4-1ubuntu7.22.04.1 [29.2 kB]
+Fetched 29.2 kB in 0s (215 kB/s)             
+debconf: delaying package configuration, since apt-utils is not installed
+Selecting previously unselected package protobuf-compiler.
+(Reading database ... 37149 files and directories currently installed.)
+Preparing to unpack .../protobuf-compiler_3.12.4-1ubuntu7.22.04.1_amd64.deb ...
+Unpacking protobuf-compiler (3.12.4-1ubuntu7.22.04.1) ...
+Setting up protobuf-compiler (3.12.4-1ubuntu7.22.04.1) ...
+root@nexus-node:~# protoc --version
+libprotoc 3.12.4
+root@nexus-node:~# 
+
+
+
+Похоже, что PPA репозиторий недоступен, и мы вернулись к той же версии protoc. Давайте попробуем установить более новую версию protobuf напрямую:
+
+1. Сначала удалим текущую версию:
+```bash
+sudo apt remove protobuf-compiler
+sudo apt autoremove
+```
+
+2. Установим необходимые зависимости:
+```bash
+sudo apt install -y curl unzip
+```
+
+3. Скачаем и установим последнюю версию protoc (21.0 или выше):
+```bash
+# Создадим временную директорию
+mkdir -p /tmp/protoc
+cd /tmp/protoc
+
+# Скачаем последнюю версию (измените версию на актуальную, если нужно)
+curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip
+
+# Распакуем в /usr/local
+sudo unzip protoc-21.12-linux-x86_64.zip -d /usr/local
+
+# Очистим временные файлы
+cd ~
+rm -rf /tmp/protoc
+```
+
+4. Проверим версию:
+```bash
+protoc --version
+```
+
+5. Очистим предыдущую попытку установки Nexus:
+```bash
+rm -rf /root/.nexus/network-api
+```
+
+6. Теперь попробуйте снова установить Nexus CLI:
+```bash
+curl https://cli.nexus.xyz/ | sh
+```
+
+Эта версия protoc должна поддерживать опциональные поля в proto3. Если возникнут проблемы, дайте знать.
+
+
+
+
+
+root@nexus-node:~# # Создадим временную директорию
+mkdir -p /tmp/protoc
+cd /tmp/protoc
+
+# Скачаем последнюю версию (измените версию на актуальную, если нужно)
+curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip
+
+# Распакуем в /usr/local
+sudo unzip protoc-21.12-linux-x86_64.zip -d /usr/local
+
+# Очистим временные файлы
+cd ~
+rm -rf /tmp/protoc
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+100 1548k  100 1548k    0     0  1430k      0  0:00:01  0:00:01 --:--:-- 8197k
+Archive:  protoc-21.12-linux-x86_64.zip
+  inflating: /usr/local/bin/protoc   
+  inflating: /usr/local/include/google/protobuf/any.proto  
+  inflating: /usr/local/include/google/protobuf/api.proto  
+  inflating: /usr/local/include/google/protobuf/compiler/plugin.proto  
+  inflating: /usr/local/include/google/protobuf/descriptor.proto  
+  inflating: /usr/local/include/google/protobuf/duration.proto  
+  inflating: /usr/local/include/google/protobuf/empty.proto  
+  inflating: /usr/local/include/google/protobuf/field_mask.proto  
+  inflating: /usr/local/include/google/protobuf/source_context.proto  
+  inflating: /usr/local/include/google/protobuf/struct.proto  
+  inflating: /usr/local/include/google/protobuf/timestamp.proto  
+  inflating: /usr/local/include/google/protobuf/type.proto  
+  inflating: /usr/local/include/google/protobuf/wrappers.proto  
+  inflating: /usr/local/readme.txt   
+root@nexus-node:~# protoc --version
+-bash: /usr/bin/protoc: No such file or directory
+root@nexus-node:~# 
+
+
+
+
+
+
+
+Похоже, что путь к protoc не добавлен в системный PATH. Давайте это исправим:
+
+1. Создадим символическую ссылку в `/usr/bin`:
+```bash
+sudo ln -s /usr/local/bin/protoc /usr/bin/protoc
+```
+
+2. Или добавим `/usr/local/bin` в PATH:
+```bash
+echo 'export PATH=$PATH:/usr/local/bin' >> ~/.bashrc
+source ~/.bashrc
+```
+
+3. Теперь проверим версию:
+```bash
+protoc --version
+```
+
+4. После этого можно попробовать установить Nexus CLI:
+```bash
+curl https://cli.nexus.xyz/ | sh
+```
+
+Теперь protoc должен быть доступен в системе и иметь нужную версию для поддержки опциональных полей в proto3.
+
