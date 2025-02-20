@@ -4,10 +4,10 @@
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
     
-    # Проверяем только GITHUB_TOKEN как обязательную переменную
-    if [ -z "$GITHUB_TOKEN" ]; then
-        echo "Предупреждение: GITHUB_TOKEN не найден в .env файле"
-        echo "Push в репозиторий может не работать"
+    # Проверяем обязательные переменные
+    if [ -z "$VPS_IP" ] || [ -z "$DIRECTORY" ] || [ -z "$OPENAI_API_KEY" ]; then
+        echo "Предупреждение: Отсутствуют обязательные переменные в .env файле"
+        echo "Требуются: VPS_IP, DIRECTORY, OPENAI_API_KEY"
     fi
 else
     echo "Предупреждение: файл .env не найден."
@@ -21,52 +21,34 @@ check_command() {
     fi
 }
 
-# Проверяем, установлен ли git
-if ! command -v git &> /dev/null; then
-    echo "Ошибка: git не установлен."
-    exit 1
-fi
+# Проверяем необходимые зависимости
+for cmd in git jq curl; do
+    if ! command -v $cmd &> /dev/null; then
+        echo "Ошибка: $cmd не установлен."
+        exit 1
+    fi
+done
 
-# Проверяем, установлен ли jq
-if ! command -v jq &> /dev/null; then
-    echo "Ошибка: jq не установлен. Пожалуйста, установите jq для обработки JSON."
-    exit 1
-fi
-
-# Проверяем статус репозитория и добавляем изменения
+# Добавляем изменения и получаем diff
 git add .
-check_command "Не удалось выполнить 'git add'" "Изменения добавлены в индекс."
+check_command "Не удалось выполнить 'git add'"
 
-# Получаем изменения
 git_diff=$(git diff --cached)
-
-# Логируем diff
-echo "Git diff:"
-echo "$git_diff"
-
-# Проверяем количество символов в diff
-diff_length=${#git_diff}
-max_diff_length=50000  # Максимальное количество символов (можно настроить)
 
 # Если нет изменений, завершаем скрипт
 if [ -z "$git_diff" ]; then
-    echo "Нет изменений для коммита. Скрипт завершен."
+    echo "Нет изменений для коммита."
     exit 0
 fi
 
-# Если diff слишком большой или нет OPENAI_API_KEY, используем стандартное сообщение
+# Определяем описание коммита
+diff_length=${#git_diff}
+max_diff_length=50000
+
 if [ $diff_length -gt $max_diff_length ] || [ -z "$OPENAI_API_KEY" ]; then
-    if [ -z "$OPENAI_API_KEY" ]; then
-        echo "OpenAI API ключ не найден, используем стандартное описание"
-    else
-        echo "Diff слишком большой ($diff_length символов). Используем стандартное описание."
-    fi
     commit_description="автоматический коммит изменений"
 else
-    # Логируем запрос к API
-    echo "Отправляем запрос к API OpenAI..."
-
-    # Генерируем описание коммита с помощью GPT-4
+    # Генерируем описание с помощью GPT-4
     api_response=$(curl -s https://api.openai.com/v1/chat/completions \
       -H "Content-Type: application/json" \
       -H "Authorization: Bearer $OPENAI_API_KEY" \
@@ -76,7 +58,7 @@ else
       "messages": [
         {
           "role": "system",
-          "content": "Вы - опытный разработчик, пишущий краткие, но информативные описания коммитов. Опишите изменения в коде на основе diff, используя не более 70 слов."
+          "content": "Вы - опытный разработчик. Опишите изменения в коде кратко (до 70 слов)."
         },
         {
           "role": "user",
@@ -88,99 +70,56 @@ else
 EOF
     ))
 
-    # Логируем ответ API
-    echo "Ответ API:"
-    echo "$api_response"
-
-    # Проверяем наличие ошибки в ответе API
     if echo "$api_response" | jq -e '.error' > /dev/null; then
-        error_message=$(echo "$api_response" | jq -r '.error.message')
-        commit_description="слишком много изменений"
-        echo "Ошибка API: $error_message"
+        commit_description="автоматический коммит"
     else
-        # Извлекаем описание коммита из ответа API
         commit_description=$(echo "$api_response" | jq -r '.choices[0].message.content')
     fi
 fi
 
-# Логируем извлеченное описание
-echo "Извлеченное описание коммита:"
-echo "$commit_description"
-
-# Коммитим изменения с сгенерированным описанием
+# Выполняем коммит и пуш
 git commit -m "$commit_description"
 check_command "Не удалось выполнить коммит"
 
-# Пушим изменения в удалённый репозиторий
-# Обновляем URL репозитория с токеном
-remote_url=$(git remote get-url origin)
-auth_remote_url=${remote_url/https:\/\//https:\/\/$GITHUB_TOKEN@}
-git remote set-url origin "$auth_remote_url"
-
-git push https://${GITHUB_TOKEN}@github.com/pefbrute/nexus-node.git main
-if [ $? -ne 0 ]; then
-    echo "Push не удался. Пробуем сначала выполнить pull."
-    git pull https://${GITHUB_TOKEN}@github.com/pefbrute/nexus-node.git main
-    check_command "Не удалось выполнить 'git pull'" "Pull выполнен успешно."
+if ! git push origin main; then
+    echo "Push не удался. Пробуем pull и push."
+    git pull origin main
+    check_command "Не удалось выполнить pull"
     
-    git push https://${GITHUB_TOKEN}@github.com/pefbrute/nexus-node.git main
-    check_command "Не удалось выполнить 'git push' после pull" "Изменения отправлены в удалённый репозиторий."
-else
-    echo "Изменения отправлены в удалённый репозиторий."
+    git push origin main
+    check_command "Не удалось выполнить push после pull"
 fi
 
-# Возвращаем URL репозитория без токена
-git remote set-url origin "$remote_url"
-
-# Проверяем, установлен ли sshpass
-if ! command -v sshpass &> /dev/null; then
-    echo "Ошибка: sshpass не установлен."
-    exit 1
-fi
-
-# Выполняем pull на сервере после успешного пуша
-sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no root@"$VPS_IP" "
+# Обновляем код на сервере через SSH
+ssh -o StrictHostKeyChecking=no root@"$VPS_IP" "
     cd $DIRECTORY || exit
-    echo 'Сброс локальных изменений и обновление с удаленного репозитория...'
     git fetch origin main
     git reset --hard origin/main
     git clean -fd
     
-    # Rebuild and restart Docker containers
+    # Перезапускаем Docker
     docker-compose down
     docker-compose build --no-cache
     docker-compose up -d
     
-    # Restart Nginx
+    # Перезапускаем Nginx
     systemctl restart nginx
 "
 
-# Additional changes for backend dependencies
+# Обновляем зависимости бэкенда
 cd src/backend
 pip install -r requirements.txt
 cd ../..
 
-# Ensure we're in the git repository root
-cd "$(git rev-parse --show-toplevel)" || exit 1
-
-# Get and display the full commit hash
+# Выводим информацию о коммите
 commit_hash=$(git rev-parse HEAD)
-echo "Полный хэш коммита: $commit_hash"
-
-# Output commit description
-echo "Описание коммита:"
-echo "$commit_description"
-
-# Сообщение об успешном завершении скрипта
-echo "Всё успешно выполнено!"
-
-# Добавляем вывод сообщения в нужном формате
-echo -e "\n\"\"\"" 
+echo -e "\n\"\"\""
 echo "$commit_description"
 echo
 echo "\`\`\`$commit_hash\`\`\`"
 echo
-commit_keywords="коммиты, общие знания, география, математика, история"
-echo "$commit_keywords"
+echo "коммиты, общие знания, география, математика, история"
 echo "\"\"\""
+
+echo "Все операции успешно выполнены!"
 
