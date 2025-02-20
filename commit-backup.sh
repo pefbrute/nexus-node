@@ -3,9 +3,14 @@
 # Загружаем переменные окружения из файла .env
 if [ -f .env ]; then
     export $(grep -v '^#' .env | xargs)
+    
+    # Проверяем только GITHUB_TOKEN как обязательную переменную
+    if [ -z "$GITHUB_TOKEN" ]; then
+        echo "Предупреждение: GITHUB_TOKEN не найден в .env файле"
+        echo "Push в репозиторий может не работать"
+    fi
 else
-    echo "Ошибка: файл .env не найден."
-    exit 1
+    echo "Предупреждение: файл .env не найден."
 fi
 
 # Функция для проверки успешного выполнения команды
@@ -49,10 +54,14 @@ if [ -z "$git_diff" ]; then
     exit 0
 fi
 
-# Если diff слишком большой, используем стандартное сообщение
-if [ $diff_length -gt $max_diff_length ]; then
-    commit_description="слишком много изменений"
-    echo "Diff слишком большой ($diff_length символов). Используем стандартное описание."
+# Если diff слишком большой или нет OPENAI_API_KEY, используем стандартное сообщение
+if [ $diff_length -gt $max_diff_length ] || [ -z "$OPENAI_API_KEY" ]; then
+    if [ -z "$OPENAI_API_KEY" ]; then
+        echo "OpenAI API ключ не найден, используем стандартное описание"
+    else
+        echo "Diff слишком большой ($diff_length символов). Используем стандартное описание."
+    fi
+    commit_description="автоматический коммит изменений"
 else
     # Логируем запрос к API
     echo "Отправляем запрос к API OpenAI..."
@@ -103,6 +112,11 @@ git commit -m "$commit_description"
 check_command "Не удалось выполнить коммит"
 
 # Пушим изменения в удалённый репозиторий
+# Обновляем URL репозитория с токеном
+remote_url=$(git remote get-url origin)
+auth_remote_url=${remote_url/https:\/\//https:\/\/$GITHUB_TOKEN@}
+git remote set-url origin "$auth_remote_url"
+
 git push origin main
 if [ $? -ne 0 ]; then
     echo "Push не удался. Пробуем сначала выполнить pull."
@@ -114,6 +128,9 @@ if [ $? -ne 0 ]; then
 else
     echo "Изменения отправлены в удалённый репозиторий."
 fi
+
+# Возвращаем URL репозитория без токена
+git remote set-url origin "$remote_url"
 
 # Проверяем, установлен ли sshpass
 if ! command -v sshpass &> /dev/null; then
