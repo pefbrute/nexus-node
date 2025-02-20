@@ -117,13 +117,13 @@ remote_url=$(git remote get-url origin)
 auth_remote_url=${remote_url/https:\/\//https:\/\/$GITHUB_TOKEN@}
 git remote set-url origin "$auth_remote_url"
 
-git push origin main
+git push https://${GITHUB_TOKEN}@github.com/pefbrute/nexus-node.git main
 if [ $? -ne 0 ]; then
     echo "Push не удался. Пробуем сначала выполнить pull."
-    git pull --rebase origin main
+    git pull https://${GITHUB_TOKEN}@github.com/pefbrute/nexus-node.git main
     check_command "Не удалось выполнить 'git pull'" "Pull выполнен успешно."
     
-    git push origin main
+    git push https://${GITHUB_TOKEN}@github.com/pefbrute/nexus-node.git main
     check_command "Не удалось выполнить 'git push' после pull" "Изменения отправлены в удалённый репозиторий."
 else
     echo "Изменения отправлены в удалённый репозиторий."
