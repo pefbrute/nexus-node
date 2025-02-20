@@ -20,23 +20,6 @@ run_command() {
 
 echo "Начало установки..."
 
-# 1. Установка Git
-echo "Установка Git..."
-run_command "apt update"
-run_command "apt install -y git"
-
-# Настройка Git (если не настроен)
-if [ -z "$(git config --global user.name)" ]; then
-    echo "Настройка Git..."
-    echo "Введите ваше имя для Git:"
-    read -r git_name
-    run_command "git config --global user.name \"$git_name\""
-    
-    echo "Введите ваш email для Git:"
-    read -r git_email
-    run_command "git config --global user.email \"$git_email\""
-fi
-
 # 2. Удаление старой версии Rust
 echo "Удаление старой версии Rust..."
 run_command "apt remove -y rustc cargo"
@@ -68,7 +51,6 @@ run_command "rm -rf /tmp/protoc"
 
 # Проверка версий
 echo "Проверка установленных версий..."
-git --version
 rustc --version
 cargo --version
 protoc --version
