@@ -11,7 +11,9 @@ run_command() {
     echo "Выполнение: $1"
     if ! eval "$1"; then
         echo "Ошибка при выполнении команды: $1"
-        exit 1
+        if [ "$2" != "optional" ]; then
+            exit 1
+        fi
     fi
 }
 
@@ -44,11 +46,40 @@ fi
 
 # Добавление всех изменений
 echo "Добавление изменений в индекс..."
-run_command "git add ."
+run_command "git add ." "optional"
+
+# Проверка наличия изменений
+if git diff-index --quiet HEAD --; then
+    echo "Нет изменений для коммита"
+    
+    # Проверяем, есть ли неотправленные коммиты
+    if git status | grep -q "Your branch is ahead"; then
+        echo "Есть неотправленные коммиты, отправляем их..."
+        
+        # Получение текущей ветки
+        current_branch=$(git branch --show-current)
+        if [ -z "$current_branch" ]; then
+            current_branch="main"
+            run_command "git checkout -b $current_branch" "optional"
+        fi
+        
+        # Отправка изменений
+        echo "Отправка изменений в удаленный репозиторий..."
+        if ! git push origin "$current_branch"; then
+            echo "Первая отправка в репозиторий..."
+            run_command "git push -u origin $current_branch"
+        fi
+        
+        echo "Изменения успешно отправлены!"
+    else
+        echo "Нет изменений для отправки"
+    fi
+    exit 0
+fi
 
 # Создание коммита
 echo "Создание коммита..."
-run_command "git commit -m \"$1\""
+run_command "git commit -m \"$1\"" "optional"
 
 # Проверка наличия удаленного репозитория
 if ! git remote -v | grep origin &> /dev/null; then
