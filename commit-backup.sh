@@ -11,9 +11,28 @@ run_command() {
     echo "Выполнение: $1"
     if ! eval "$1"; then
         echo "Ошибка при выполнении команды: $1"
-        if [ "$2" != "optional" ]; then
-            exit 1
+        exit 1
+    fi
+}
+
+# Функция для загрузки переменных из .env файла
+load_env() {
+    if [ -f .env ]; then
+        export $(cat .env | grep -v '^#' | xargs)
+    else
+        echo "Файл .env не найден. Создаю из шаблона..."
+        if [ ! -f .env.example ]; then
+            echo "GITHUB_TOKEN=your_token_here" > .env.example
         fi
+        cp .env.example .env
+        echo "Пожалуйста, отредактируйте файл .env и добавьте ваш GitHub токен"
+        exit 1
+    fi
+
+    # Проверка наличия токена
+    if [ -z "$GITHUB_TOKEN" ] || [ "$GITHUB_TOKEN" = "your_token_here" ]; then
+        echo "GitHub токен не настроен. Пожалуйста, добавьте его в файл .env"
+        exit 1
     fi
 }
 
@@ -23,6 +42,17 @@ if ! command -v git &> /dev/null; then
     echo "sudo apt update && sudo apt install git"
     exit 1
 fi
+
+# Создание .gitignore если его нет
+if [ ! -f .gitignore ]; then
+    echo "Создание .gitignore..."
+    echo ".env" > .gitignore
+    run_command "git add .gitignore"
+    run_command "git commit -m \"Add .gitignore\""
+fi
+
+# Загрузка переменных окружения
+load_env
 
 # Проверка, находимся ли мы в git репозитории
 if ! git rev-parse --is-inside-work-tree &> /dev/null; then
@@ -46,47 +76,21 @@ fi
 
 # Добавление всех изменений
 echo "Добавление изменений в индекс..."
-run_command "git add ." "optional"
-
-# Проверка наличия изменений
-if git diff-index --quiet HEAD --; then
-    echo "Нет изменений для коммита"
-    
-    # Проверяем, есть ли неотправленные коммиты
-    if git status | grep -q "Your branch is ahead"; then
-        echo "Есть неотправленные коммиты, отправляем их..."
-        
-        # Получение текущей ветки
-        current_branch=$(git branch --show-current)
-        if [ -z "$current_branch" ]; then
-            current_branch="main"
-            run_command "git checkout -b $current_branch" "optional"
-        fi
-        
-        # Отправка изменений
-        echo "Отправка изменений в удаленный репозиторий..."
-        if ! git push origin "$current_branch"; then
-            echo "Первая отправка в репозиторий..."
-            run_command "git push -u origin $current_branch"
-        fi
-        
-        echo "Изменения успешно отправлены!"
-    else
-        echo "Нет изменений для отправки"
-    fi
-    exit 0
-fi
+run_command "git add ."
 
 # Создание коммита
 echo "Создание коммита..."
-run_command "git commit -m \"$1\"" "optional"
+run_command "git commit -m \"$1\""
 
 # Проверка наличия удаленного репозитория
 if ! git remote -v | grep origin &> /dev/null; then
     echo "Удаленный репозиторий не настроен."
-    echo "Введите URL удаленного репозитория (например, https://github.com/username/repo.git):"
+    echo "Введите URL удаленного репозитория (в формате: https://github.com/username/repo.git):"
     read -r repo_url
-    run_command "git remote add origin $repo_url"
+    
+    # Формируем URL с токеном
+    repo_url_with_token=${repo_url/https:\/\//https:\/\/$GITHUB_TOKEN@}
+    run_command "git remote add origin \"$repo_url_with_token\""
 fi
 
 # Получение текущей ветки
@@ -98,9 +102,12 @@ fi
 
 # Отправка изменений
 echo "Отправка изменений в удаленный репозиторий..."
-if ! git push origin "$current_branch"; then
+if ! git push origin "$current_branch" 2>/dev/null; then
     echo "Первая отправка в репозиторий..."
-    run_command "git push -u origin $current_branch"
+    if ! git push -u origin "$current_branch" 2>/dev/null; then
+        echo "Ошибка доступа. Проверьте токен в файле .env"
+        exit 1
+    fi
 fi
 
-echo "Резервное копирование успешно завершено!" 
+echo "Резервное копирование успешно завершено!"
