@@ -4,4 +4,5 @@
 source "$HOME/.cargo/env"
 
 echo "Установка Nexus CLI..."
-curl https://cli.nexus.xyz/ | sh 
+# Автоматически отвечаем Y на запрос подтверждения
+yes Y | curl https://cli.nexus.xyz/ | sh 
