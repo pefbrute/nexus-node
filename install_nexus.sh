@@ -20,6 +20,11 @@ run_command() {
 
 echo "Начало установки..."
 
+# 1. Установка необходимых пакетов
+echo "Установка необходимых пакетов..."
+run_command "apt update"
+run_command "apt install -y unzip curl"
+
 # 2. Удаление старой версии Rust
 echo "Удаление старой версии Rust..."
 run_command "apt remove -y rustc cargo"
@@ -45,6 +50,7 @@ run_command "mkdir -p /tmp/protoc"
 cd /tmp/protoc || exit 1
 run_command "curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip"
 run_command "unzip protoc-21.12-linux-x86_64.zip -d /usr/local"
+run_command "chmod +x /usr/local/bin/protoc"
 run_command "ln -sf /usr/local/bin/protoc /usr/bin/protoc"
 cd ~ || exit 1
 run_command "rm -rf /tmp/protoc"
