@@ -4,4 +4,3 @@
 /transaction-sender/.env
 /transaction-sender/.env.example
 /transaction-sender/wallets.txt
-/transaction-sender/one_private_account_to_another_accounts/wallets.txt
