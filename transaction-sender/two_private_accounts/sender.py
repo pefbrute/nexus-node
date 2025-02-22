@@ -10,27 +10,67 @@ import argparse
 RPC_URL = "https://rpc.nexus.xyz/"
 CHAIN_ID = 392
 
-# These will be initialized in main()
-PRIVATE_KEY = None
-AMOUNT = None
-GAS_LIMIT = None
-MAX_BASE_FEE = None
-PRIORITY_FEE = None
-DELAY = None
+script_dir = Path(__file__).parent
+env_path = script_dir / '.env'
+
+# Если .env не существует, создаем его
+if not env_path.exists():
+    print("\n⚙️ Creating new .env file...")
+    
+    # Запрашиваем приватные ключи
+    print("\nPlease enter your private keys:")
+    
+    # Первый ключ
+    while True:
+        pk1 = input("\nEnter first wallet private key (without 0x prefix): ").strip().replace('0x', '')
+        if len(pk1) == 64:
+            break
+        print("❌ Invalid key length. Private key must be 64 characters long.")
+    
+    # Второй ключ
+    while True:
+        pk2 = input("\nEnter second wallet private key (without 0x prefix): ").strip().replace('0x', '')
+        if len(pk2) == 64:
+            break
+        print("❌ Invalid key length. Private key must be 64 characters long.")
+    
+    # Создаем .env с дефолтными настройками
+    env_content = f"""# Network configuration
+RPC_URL="{RPC_URL}"
+CHAIN_ID={CHAIN_ID}
+
+# Wallet configuration
+PRIVATE_KEY={pk1}  # First wallet private key without 0x prefix
+PRIVATE_KEY2={pk2}  # Second wallet private key without 0x prefix
+
+# Transaction settings
+AMOUNT=0.1  # Amount of NEX to send
+GAS_LIMIT=21000  # Transaction gas limit
+
+# Gas price settings (in gwei)
+MAX_BASE_FEE=2.0  # Maximum base fee
+PRIORITY_FEE=0.1  # Priority fee
+
+# Other settings
+DELAY=60  # Delay between transactions in seconds
+"""
+    
+    with open(env_path, 'w') as f:
+        f.write(env_content)
+    
+    print("\n✅ Created .env file with your private keys and default settings")
 
 # Load environment variables
-load_dotenv()
+load_dotenv(env_path)
 
-# Remove 0x prefix if present
+# Initialize variables
 PRIVATE_KEY = os.getenv("PRIVATE_KEY", "").replace("0x", "")
-AMOUNT = float(os.getenv("AMOUNT", 0.001))  # Amount of NEX to send
+PRIVATE_KEY2 = os.getenv("PRIVATE_KEY2", "").replace("0x", "")
+AMOUNT = float(os.getenv("AMOUNT", 0.1))
 GAS_LIMIT = int(os.getenv("GAS_LIMIT", 21000))
-
-# Конвертируем значения газа из gwei в wei
 MAX_BASE_FEE = Web3.to_wei(float(os.getenv("MAX_BASE_FEE", 2.0)), "gwei")
 PRIORITY_FEE = Web3.to_wei(float(os.getenv("PRIORITY_FEE", 0.1)), "gwei")
-
-DELAY = int(os.getenv("DELAY", 60))  # Delay between transactions in seconds
+DELAY = int(os.getenv("DELAY", 60))
 
 # Debug prints
 print("\n=== Configuration ===")
@@ -166,68 +206,11 @@ def send_transaction(private_key, to_address):
         print(f"\n❌ Error sending to {to_address}: {str(e)}")
         return False
 
-def setup_env(force_setup=False):
-    """Setup environment variables by prompting user for values"""
-    # Get the directory where the script is located
-    script_dir = Path(__file__).parent
-    env_path = script_dir / '.env'
-    env_example_path = script_dir / '.env.example'
-    
-    if not env_example_path.exists():
-        print("❌ .env.example file not found!")
-        exit(1)
-    
-    # Проверяем существование .env и флаг принудительной настройки
-    if env_path.exists() and not force_setup:
-        return
-        
-    print("\n⚙️ Setting up .env file...")
-    
-    # Read template from .env.example
-    with open(env_example_path, 'r') as f:
-        template_lines = f.readlines()
-    
-    # Process each line and get user input for variables
-    env_contents = []
-    for line in template_lines:
-        line = line.strip()
-        if line and not line.startswith('#') and '=' in line:
-            key, default_value = line.split('=', 1)
-            key = key.strip()
-            default_value = default_value.strip().strip('"')
-            
-            # Skip non-configurable variables
-            if key in ['RPC_URL', 'CHAIN_ID']:
-                env_contents.append(line)
-                continue
-                
-            # Remove comments from default value
-            if '#' in default_value:
-                default_value = default_value.split('#')[0].strip()
-            
-            # Get user input
-            user_value = input(f"Enter {key} [{default_value}]: ").strip()
-            if not user_value:
-                user_value = default_value
-                
-            # Add quotes if value contains spaces
-            if ' ' in user_value:
-                user_value = f'"{user_value}"'
-                
-            env_contents.append(f"{key}={user_value}")
-        else:
-            env_contents.append(line)
-    
-    # Write to .env file
-    with open(env_path, 'w') as f:
-        f.write('\n'.join(env_contents))
-    
-    print("✅ Created .env file with your settings!")
-
 def validate_env():
     """Validate that all required environment variables are set"""
     required_vars = {
         'PRIVATE_KEY': 'Your wallet private key',
+        'PRIVATE_KEY2': 'Second wallet private key',
         'AMOUNT': 'Amount of NEX to send',
         'GAS_LIMIT': 'Transaction gas limit',
         'MAX_BASE_FEE': 'Maximum base fee in gwei',
@@ -247,72 +230,67 @@ def validate_env():
 
 def main():
     """Main function"""
-    # Добавляем аргумент командной строки для принудительной настройки
     parser = argparse.ArgumentParser()
     parser.add_argument('--setup', action='store_true', help='Force environment setup')
     args = parser.parse_args()
     
-    # Setup environment before loading variables
-    setup_env(force_setup=args.setup)
+    if args.setup and env_path.exists():
+        os.remove(env_path)
+        print("Removed existing .env file")
     
-    # Move load_dotenv() before any variable initialization
-    script_dir = Path(__file__).parent
-    env_path = script_dir / '.env'
-    load_dotenv(env_path)
-    validate_env()
+    # Get wallet addresses
+    wallet1 = web3.eth.account.from_key(PRIVATE_KEY).address
+    wallet2 = web3.eth.account.from_key(PRIVATE_KEY2).address
     
-    # Initialize variables after loading .env
-    global PRIVATE_KEY, AMOUNT, GAS_LIMIT, MAX_BASE_FEE, PRIORITY_FEE, DELAY
-    PRIVATE_KEY = os.getenv("PRIVATE_KEY", "").replace("0x", "")
-    AMOUNT = float(os.getenv("AMOUNT", 0.001))
-    GAS_LIMIT = int(os.getenv("GAS_LIMIT", 21000))
-    MAX_BASE_FEE = Web3.to_wei(float(os.getenv("MAX_BASE_FEE", 2.0)), "gwei")
-    PRIORITY_FEE = Web3.to_wei(float(os.getenv("PRIORITY_FEE", 0.1)), "gwei")
-    DELAY = int(os.getenv("DELAY", 60))
-    
-    # Debug prints
-    print("\n=== Configuration ===")
-    print(f"RPC URL: {RPC_URL}")
-    print(f"Chain ID: {CHAIN_ID}")
-    print(f"Amount to send: {AMOUNT} NEX")
-    print(f"Gas limit: {GAS_LIMIT}")
-    print(f"Max base fee: {MAX_BASE_FEE}")
-    print(f"Priority fee: {PRIORITY_FEE}")
-    print(f"Delay between transactions: {DELAY} seconds")
+    print(f"\nWallet 1: {wallet1}")
+    print(f"Wallet 2: {wallet2}")
     
     print("\n=== Starting transaction sender ===")
     
-    if not PRIVATE_KEY:
-        print("❌ Error: PRIVATE_KEY not set in .env file")
+    if not PRIVATE_KEY or not PRIVATE_KEY2:
+        print("❌ Error: PRIVATE_KEY or PRIVATE_KEY2 not set in .env file")
         return
-
-    wallets = load_wallets()
-    if not wallets:
-        print("❌ Error: No wallet addresses found")
-        return
-
-    print(f"\n📝 Loaded {len(wallets)} wallet addresses:")
-    for wallet in wallets:
-        print(f"   - {wallet}")
     
     try:
-        while True:  # Бесконечный цикл
-            for recipient in wallets:
-                print(f"\n💫 Sending {AMOUNT} NEX to {recipient}")
-                success = send_transaction(PRIVATE_KEY, recipient)
-                if success:
-                    print("\n✅ Transaction completed successfully")
-                else:
-                    print("\n❌ Transaction failed")
-                
-                print(f"\n⏳ Waiting {DELAY} seconds before next transaction...")
-                time.sleep(DELAY)
+        # Флаг для отслеживания текущего кошелька (True = первый кошелек, False = второй)
+        is_first_wallet = True
+        
+        while True:
+            # Проверяем балансы обоих кошельков
+            balance1 = check_balance(wallet1)
+            balance2 = check_balance(wallet2)
             
-            print("\n🔄 Starting new round of transactions...")
+            if balance1 < AMOUNT and balance2 < AMOUNT:
+                print("\n❌ Both wallets have insufficient balance. Stopping script.")
+                break
+            
+            if is_first_wallet:
+                # Пытаемся отправить с первого кошелька на второй
+                print(f"\n💫 Sending {AMOUNT} NEX from Wallet 1 to Wallet 2")
+                success = send_transaction(PRIVATE_KEY, wallet2)
+                if success:
+                    print("\n✅ Transaction 1->2 completed successfully")
+                else:
+                    print("\n❌ Transaction 1->2 failed")
+            else:
+                # Пытаемся отправить со второго кошелька на первый
+                print(f"\n💫 Sending {AMOUNT} NEX from Wallet 2 to Wallet 1")
+                success = send_transaction(PRIVATE_KEY2, wallet1)
+                if success:
+                    print("\n✅ Transaction 2->1 completed successfully")
+                else:
+                    print("\n❌ Transaction 2->1 failed")
+            
+            # Переключаем кошелек для следующей транзакции
+            is_first_wallet = not is_first_wallet
+            
+            print(f"\n⏳ Waiting {DELAY} seconds before next transaction...")
+            time.sleep(DELAY)
+            print("\n🔄 Starting next transaction...")
             
     except KeyboardInterrupt:
         print("\n\n👋 Script stopped by user")
         print("Thank you for using the transaction sender!")
 
 if __name__ == "__main__":
-    main() 
+    main()
