@@ -217,6 +217,52 @@ def validate_env():
         print("\nPlease configure these variables in your .env file")
         exit(1)
 
+def save_wallets(addresses):
+    """Save wallet addresses to wallets.txt"""
+    try:
+        script_dir = Path(__file__).parent
+        wallets_path = script_dir / "wallets.txt"
+        with open(wallets_path, "w") as f:
+            for address in addresses:
+                f.write(f"{address}\n")
+        print(f"✅ Saved {len(addresses)} addresses to wallets.txt")
+    except Exception as e:
+        print(f"❌ Error saving wallets: {e}")
+
+def get_recipient_addresses():
+    """Get recipient addresses from wallets.txt or user input"""
+    script_dir = Path(__file__).parent
+    wallets_path = script_dir / "wallets.txt"
+    
+    # Create wallets.txt if it doesn't exist
+    if not wallets_path.exists():
+        print("\n📝 Creating new wallets.txt file...")
+        wallets_path.touch()
+    
+    # Read existing addresses
+    addresses = load_wallets()
+    
+    # If no addresses found, prompt for input
+    if not addresses:
+        print("\nℹ️ No recipient addresses found in wallets.txt")
+        print("Enter recipient addresses (press Enter with empty input to finish):")
+        
+        while True:
+            address = input("\nEnter recipient address: ").strip()
+            if not address:
+                break
+            if Web3.is_address(address):
+                addresses.append(address)
+                print("✅ Address added")
+            else:
+                print("❌ Invalid address format")
+        
+        if addresses:
+            # Save entered addresses to file
+            save_wallets(addresses)
+    
+    return addresses
+
 def main():
     """Main function"""
     parser = argparse.ArgumentParser()
@@ -237,24 +283,16 @@ def main():
         print("❌ Error: PRIVATE_KEY not set in .env file")
         return
     
-    # Load recipient addresses
-    recipient_addresses = load_wallets()
-    if not recipient_addresses:
-        print("\nℹ️ No recipient addresses found in wallets.txt")
-        while True:
-            address = input("\nEnter recipient address (or press Enter to finish): ").strip()
-            if not address:
-                break
-            if Web3.is_address(address):
-                recipient_addresses.append(address)
-            else:
-                print("❌ Invalid address format")
+    # Get recipient addresses using new function
+    recipient_addresses = get_recipient_addresses()
     
     if not recipient_addresses:
         print("❌ No recipient addresses provided. Exiting...")
         return
     
-    print(f"\nFound {len(recipient_addresses)} recipient address(es)")
+    print(f"\nFound {len(recipient_addresses)} recipient address(es):")
+    for addr in recipient_addresses:
+        print(f"  • {addr}")
     
     try:
         current_index = 0

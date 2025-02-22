@@ -1,3 +1,4 @@
 .env
 .env.example
 .commit-backup.sh
+.wallets.txt
