@@ -20,9 +20,14 @@ run_command() {
 
 echo "Начало установки..."
 
+# Удаление проблемного PPA репозитория
+echo "Удаление старых репозиториев..."
+run_command "rm -f /etc/apt/sources.list.d/maarten-fonville-ubuntu-protobuf-*.list" "optional"
+run_command "rm -f /etc/apt/sources.list.d/maarten-fonville-ubuntu-protobuf-*.list.save" "optional"
+
 # 1. Установка необходимых пакетов
 echo "Установка необходимых пакетов..."
-run_command "apt update"
+run_command "apt update || true"  # Продолжаем даже если есть ошибки в update
 run_command "apt install -y unzip curl"
 
 # 2. Удаление старой версии Rust
@@ -46,10 +51,13 @@ run_command "apt install -y pkg-config libssl-dev"
 # 6. Установка protobuf-compiler
 echo "Установка Protocol Buffers..."
 run_command "apt remove -y protobuf-compiler" "optional"
+run_command "apt autoremove -y" "optional"
 run_command "mkdir -p /tmp/protoc"
 cd /tmp/protoc || exit 1
-run_command "curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip"
-run_command "unzip protoc-21.12-linux-x86_64.zip -d /usr/local"
+if [ ! -f "protoc-21.12-linux-x86_64.zip" ]; then
+    run_command "curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip"
+fi
+run_command "unzip -o protoc-21.12-linux-x86_64.zip -d /usr/local"
 run_command "chmod +x /usr/local/bin/protoc"
 run_command "ln -sf /usr/local/bin/protoc /usr/bin/protoc"
 cd ~ || exit 1
@@ -64,7 +72,7 @@ protoc --version
 # Установка Nexus CLI
 echo -e "\nУстановка Nexus CLI..."
 run_command "rm -rf ~/.nexus/network-api" "optional"
-if curl https://cli.nexus.xyz/ | sh; then
+if curl -f https://cli.nexus.xyz/ | sh; then
     echo -e "\nУстановка успешно завершена!"
 else
     echo -e "\nПроизошла ошибка при установке Nexus CLI."
