@@ -1,2 +1,5 @@
 .env 
 ./commit-backup.sh
+./transaction-sender/.env
+./transaction-sender/.env.example
+./transaction-sender/wallets.txt
