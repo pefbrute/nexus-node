@@ -2,5 +2,3 @@
 .env.example
 commit-backup.sh
 wallets.txt
-/wallets.txt
-transaction-sender/one_private_account_to_another_accounts/wallets.txt
