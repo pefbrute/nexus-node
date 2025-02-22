@@ -278,6 +278,7 @@ def main():
     print(f"Gas limit: {GAS_LIMIT}")
     print(f"Max base fee: {MAX_BASE_FEE}")
     print(f"Priority fee: {PRIORITY_FEE}")
+    print(f"Delay between transactions: {DELAY} seconds")
     
     print("\n=== Starting transaction sender ===")
     
@@ -294,15 +295,24 @@ def main():
     for wallet in wallets:
         print(f"   - {wallet}")
     
-    for recipient in wallets:
-        print(f"\n💫 Sending {AMOUNT} NEX to {recipient}")
-        success = send_transaction(PRIVATE_KEY, recipient)
-        if success:
-            print("\n✅ Transaction completed successfully")
-        else:
-            print("\n❌ Transaction failed")
-    
-    print("\n👋 All transactions completed")
+    try:
+        while True:  # Бесконечный цикл
+            for recipient in wallets:
+                print(f"\n💫 Sending {AMOUNT} NEX to {recipient}")
+                success = send_transaction(PRIVATE_KEY, recipient)
+                if success:
+                    print("\n✅ Transaction completed successfully")
+                else:
+                    print("\n❌ Transaction failed")
+                
+                print(f"\n⏳ Waiting {DELAY} seconds before next transaction...")
+                time.sleep(DELAY)
+            
+            print("\n🔄 Starting new round of transactions...")
+            
+    except KeyboardInterrupt:
+        print("\n\n👋 Script stopped by user")
+        print("Thank you for using the transaction sender!")
 
 if __name__ == "__main__":
     main() 
